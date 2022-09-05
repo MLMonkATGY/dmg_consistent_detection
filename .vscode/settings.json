@@ -1,0 +1,38 @@
+{
+  "python.formatting.provider": "autopep8",
+  "python.linting.pydocstyleEnabled": false,
+  "python.linting.pycodestyleEnabled": true,
+  "python.linting.enabled": true,
+  "python.linting.pycodestyleArgs": [
+    "--ignore=E712, E501, W504, E302, E203, E231, E303, E201, W293, W291, W292, E305, W503, E402, E127, E123, E126"
+  ],
+
+  "python.analysis.diagnosticMode": "workspace",
+
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}:${env:PYTHONPATH}"
+  },
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["-s"],
+  "python.analysis.extraPaths": [
+    "/home/alextay96/Desktop/workspace/mrm_damage_detection_exp/src"
+  ],
+  "python.testing.cwd": "${workspaceFolder}",
+  "files.watcherExclude": {
+    "**/dagster_home/**": true,
+    "**/data/**": true,
+    "**/mlruns/**": true
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 35432,
+      "driver": "PostgreSQL",
+      "name": "dsm_local",
+      "database": "mrm_etl",
+      "username": "postgres",
+      "password": "postgres"
+    }
+  ]
+}

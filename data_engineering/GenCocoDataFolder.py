@@ -16,4 +16,3 @@ if __name__ == "__main__":
         srcFile = f"{srcImgDir}/{filename}"
         dstFilename = os.path.join(dstDir, filename)
         shutil.copyfile(srcFile, dstFilename)
-

@@ -8,82 +8,69 @@ from pycocotools.coco import COCO
 import cv2
 import albumentations as A
 from dataclasses import dataclass
+from PIL import Image
 
 
-class CocoTrainDataset(Dataset):
-    def __init__(self, annFilePath: str, dataFolder: str, transform: A.Compose):
+class CocoDataset(torch.utils.data.Dataset):
+    def __init__(self, root, annotation, transforms=None):
+        self.root = root
+        self.transforms = transforms
+        self.coco = COCO(annotation)
+        self.ids = list(sorted(self.coco.imgs.keys()))
 
-        self.transform: A.Compose = transform
-        self.annFilePath = annFilePath
-        self.dataFolder = dataFolder
-        self.coco = COCO(annotation_file=self.annFilePath)
-        self.image_ids = self.coco.getImgIds()
+    def __getitem__(self, index):
+        # Own coco file
+        coco = self.coco
+        # Image ID
+        img_id = self.ids[index]
+        # List: get annotation id from coco
+        ann_ids = coco.getAnnIds(imgIds=img_id)
+        # Dictionary: target coco_annotation file for an image
+        coco_annotation = coco.loadAnns(ann_ids)
+        # path for input image
+        path = coco.loadImgs(img_id)[0]["file_name"]
+        # open the input image
+        img = Image.open(os.path.join(self.root, path))
 
-        self.load_classes()
+        # number of objects in the image
+        num_objs = len(coco_annotation)
 
-    def load_classes(self):
+        # Bounding boxes for objects
+        # In coco format, bbox = [xmin, ymin, width, height]
+        # In pytorch, the input should be [xmin, ymin, xmax, ymax]
+        boxes = []
+        for i in range(num_objs):
+            xmin = coco_annotation[i]["bbox"][0]
+            ymin = coco_annotation[i]["bbox"][1]
+            xmax = xmin + coco_annotation[i]["bbox"][2]
+            ymax = ymin + coco_annotation[i]["bbox"][3]
+            boxes.append([xmin, ymin, xmax, ymax])
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
+        # Labels (In my case, I only one class: target class or background)
+        labels = torch.tensor([x["category_id"] for x in coco_annotation])
+        # labels = torch.ones((num_objs,), dtype=torch.int64)
+        # Tensorise img_id
+        img_id = torch.tensor([img_id])
+        # Size of bbox (Rectangular)
+        areas = []
+        for i in range(num_objs):
+            areas.append(coco_annotation[i]["area"])
+        areas = torch.as_tensor(areas, dtype=torch.float32)
+        # Iscrowd
+        iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
 
-        # load class names (name -> label)
-        categories = self.coco.loadCats(self.coco.getCatIds())
-        categories.sort(key=lambda x: x["id"])
+        # Annotation is in dictionary format
+        my_annotation = {}
+        my_annotation["boxes"] = boxes
+        my_annotation["labels"] = labels
+        my_annotation["image_id"] = img_id
+        my_annotation["area"] = areas
+        my_annotation["iscrowd"] = iscrowd
 
-        self.classes = {}
-        for c in categories:
-            self.classes[c["name"]] = len(self.classes)
+        if self.transforms is not None:
+            img = self.transforms(img)
 
-        # also load the reverse (label -> name)
-        self.labels = {}
-        for key, value in self.classes.items():
-            self.labels[value] = key
+        return img, my_annotation
 
     def __len__(self):
-        return len(self.image_ids)
-
-    def __getitem__(self, idx):
-
-        img = self.load_image(idx)
-        annot = self.load_annotations(idx)
-        sample = {"img": img, "annot": annot}
-        bbox = annot[:, :4]
-        category_ids = annot[:, -1]
-
-        transformed = self.transform(image=img, bboxes=bbox, category_ids=category_ids)
-        sample = {"transformed": transformed, "orig_annot": annot}
-        return sample
-
-    def load_image(self, image_index):
-        image_info = self.coco.loadImgs(self.image_ids[image_index])[0]
-        path = os.path.join(self.dataFolder, image_info["file_name"])
-        img = cv2.imread(path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        return img
-
-    def load_annotations(self, image_index):
-        # get ground truth annotations
-        annotations_ids = self.coco.getAnnIds(
-            imgIds=self.image_ids[image_index], iscrowd=False
-        )
-        annotations = np.zeros((0, 5))
-
-        # some images appear to miss annotations
-        if len(annotations_ids) == 0:
-            return annotations
-
-        # parse annotations
-        coco_annotations = self.coco.loadAnns(annotations_ids)
-        for idx, a in enumerate(coco_annotations):
-
-            # some annotations have basically no width / height, skip them
-            # if a["bbox"][2] < 1 or a["bbox"][3] < 1:
-            #     continue
-
-            annotation = np.zeros((1, 5))
-            annotation[0, :4] = a["bbox"]
-            annotation[0, 4] = a["category_id"] - 1
-            annotations = np.append(annotations, annotation, axis=0)
-
-        # transform from [x, y, w, h] to [x1, y1, x2, y2]
-        # annotations[:, 2] = annotations[:, 0] + annotations[:, 2]
-        # annotations[:, 3] = annotations[:, 1] + annotations[:, 3]
-
-        return annotations
+        return len(self.ids)

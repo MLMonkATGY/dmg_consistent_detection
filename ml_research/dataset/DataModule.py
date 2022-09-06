@@ -10,7 +10,15 @@ from albumentations.pytorch.transforms import ToTensorV2
 from torch.utils.data import DataLoader2
 import torch
 import numpy as np
-from ml_research.dataset.CocoDataset import CocoTrainDataset
+from ml_research.dataset.CocoDataset import CocoDataset
+
+
+def collate_fn(batch):
+    """
+    To handle the data loading as different images may have different number
+    of objects and to handle varying size tensors as well.
+    """
+    return tuple(zip(*batch))
 
 
 def collaterFn(input: Dict):
@@ -99,12 +107,10 @@ class CocoDatamodule(pl.LightningDataModule):
         )
         self.batch_size = GlobalParams.trainBatchSize
         self.workerNum = GlobalParams.trainCPUWorker
-        self.trainSet = CocoTrainDataset(
+        self.trainSet = CocoDataset(
             self.trainAnn, self.trainDataDir, self.trainTransform
         )
-        self.evalSet = CocoTrainDataset(
-            self.evalAnn, self.evalDataFolder, self.valTransform
-        )
+        self.evalSet = CocoDataset(self.evalAnn, self.evalDataFolder, self.valTransform)
 
     def setup(self, stage: Optional[str] = None):
         pass
@@ -115,7 +121,7 @@ class CocoDatamodule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.workerNum,
-            collate_fn=collaterFn,
+            collate_fn=collate_fn,
             persistent_workers=True,
             pin_memory=True,
         )
@@ -126,7 +132,7 @@ class CocoDatamodule(pl.LightningDataModule):
             batch_size=1,
             shuffle=False,
             num_workers=0,
-            collate_fn=collaterFn,
+            collate_fn=collate_fn,
         )
 
         ...

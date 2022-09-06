@@ -7,6 +7,7 @@ import os
 
 
 def visualizeAll(model):
+    model.eval()
     DEVICE = torch.device("cuda")
     CLASSES = [
         "bg",
@@ -18,6 +19,8 @@ def visualizeAll(model):
     ]
     COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
     DIR_TEST = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images"
+    outputDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/inference_outputs/images"
+    os.makedirs(outputDir, exist_ok=True)
     test_images = glob.glob(f"{DIR_TEST}/*.jpg")
     print(f"Test instances: {len(test_images)}")
     # define the detection threshold...
@@ -27,6 +30,7 @@ def visualizeAll(model):
     frame_count = 0
     # to keep adding the FPS for each image
     total_fps = 0
+    ii = 0
     for i in range(len(test_images)):
         # get the image file name for saving output later on
         image_name = test_images[i].split(os.path.sep)[-1].split(".")[0]
@@ -59,7 +63,11 @@ def visualizeAll(model):
             boxes = outputs[0]["boxes"].data.numpy()
             scores = outputs[0]["scores"].data.numpy()
             # filter out boxes according to `detection_threshold`
+
             boxes = boxes[scores >= detection_threshold].astype(np.int32)
+            if ii % 20 == 0:
+                print(f"{scores} {boxes}")
+            ii += 1
             draw_boxes = boxes.copy()
             # get all the predicited class names
             pred_classes = [CLASSES[i] for i in outputs[0]["labels"].cpu().numpy()]
@@ -88,11 +96,11 @@ def visualizeAll(model):
             # cv2.imshow("Prediction", orig_image)
             # cv2.waitKey(1)
             cv2.imwrite(
-                f"/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/inference_outputs/images/{image_name}.jpg",
+                f"{outputDir}/{image_name}.jpg",
                 orig_image,
             )
-        print(f"Image {i+1} done...")
-        print("-" * 50)
+        # print(f"Image {i+1} done...")
+        # print("-" * 50)
     print("TEST PREDICTIONS COMPLETE")
     # cv2.destroyAllWindows()
     # calculate and print the average FPS

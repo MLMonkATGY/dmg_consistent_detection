@@ -90,7 +90,7 @@ def visualizeAll(model):
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.7,
                     color,
-                    2,
+                    0.5,
                     lineType=cv2.LINE_AA,
                 )
             # cv2.imshow("Prediction", orig_image)

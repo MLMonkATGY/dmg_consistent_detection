@@ -39,20 +39,33 @@ if __name__ == "__main__":
     # dm = CocoDatamodule()
     trainTransform = torchvision.transforms.Compose(
         [
-            # torchvision.transforms.ColorJitter(
-            #     brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2
-            # ),
+            torchvision.transforms.ColorJitter(
+                brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2
+            ),
+            torchvision.transforms.ToTensor(),
+        ]
+    )
+    evalTransform = torchvision.transforms.Compose(
+        [
             torchvision.transforms.ToTensor(),
         ]
     )
     trainDs = CocoDataset(
         root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images",
-        annotation="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/complete.json",
+        annotation="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/train.json",
         transforms=trainTransform,
     )
 
     trainLoader = DataLoader2(
         trainDs, shuffle=True, batch_size=10, num_workers=4, collate_fn=collate_fn
+    )
+    evalDs = CocoDataset(
+        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images",
+        annotation="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/test.json",
+        transforms=evalTransform,
+    )
+    evalLoader = DataLoader2(
+        evalDs, shuffle=False, batch_size=10, num_workers=2, collate_fn=collate_fn
     )
     num_classes = 6
     model = create_model(num_classes)
@@ -78,7 +91,7 @@ if __name__ == "__main__":
         if e % 10 != 0:
             continue
         with torch.no_grad():
-            for imgs, targets in trainLoader:
+            for imgs, targets in evalLoader:
                 optimizer.zero_grad()
 
                 images = list(image.to(DEVICE) for image in imgs)

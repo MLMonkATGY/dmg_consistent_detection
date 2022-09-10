@@ -6,12 +6,12 @@ import time
 import os
 
 
-def visualizeAll(model):
+def visualizeAll(model, epoch: int):
     model.eval()
     DEVICE = torch.device("cuda")
     CLASSES = [
         "bg",
-        "damage_area",
+        # "damage_area",
         "front_side_view",
         "front_view",
         "rear_side_view",
@@ -65,17 +65,19 @@ def visualizeAll(model):
             # filter out boxes according to `detection_threshold`
 
             boxes = boxes[scores >= detection_threshold].astype(np.int32)
+            confidence_score = scores[scores >= detection_threshold]
             # if ii % 20 == 0:
             #     print(f"{scores} {boxes}")
-            ii += 1
+            # ii += 1
             draw_boxes = boxes.copy()
             # get all the predicited class names
             pred_classes = [CLASSES[i] for i in outputs[0]["labels"].cpu().numpy()]
-
+            if len(boxes) == 0:
+                continue
             # draw the bounding boxes and write the class name on top of it
-            for j, box in enumerate(draw_boxes):
-                class_name = pred_classes[j]
-                color = COLORS[CLASSES.index(class_name)]
+            for j, (box, confidence) in enumerate(zip(draw_boxes, confidence_score)):
+                class_name = f"{pred_classes[j]} {np.format_float_positional(confidence, precision=2)}"
+                color = COLORS[CLASSES.index(pred_classes[j])]
                 cv2.rectangle(
                     orig_image,
                     (int(box[0]), int(box[1])),
@@ -96,7 +98,7 @@ def visualizeAll(model):
             # cv2.imshow("Prediction", orig_image)
             # cv2.waitKey(1)
             cv2.imwrite(
-                f"{outputDir}/{image_name}.jpg",
+                f"{outputDir}/{image_name}_e{epoch}.jpg",
                 orig_image,
             )
         # print(f"Image {i+1} done...")

@@ -19,7 +19,7 @@ def create_model(num_classes):
 
     # load Faster RCNN pre-trained model
     model = torchvision.models.detection.retinanet_resnet50_fpn_v2(
-        pretrained=True, min_size=300, max_size=600, num_classes=6
+        pretrained=True, min_size=300, max_size=700, num_classes=6
     )
 
     # get the number of input features
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     )
 
     trainLoader = DataLoader2(
-        trainDs, shuffle=True, batch_size=10, num_workers=4, collate_fn=collate_fn
+        trainDs, shuffle=True, batch_size=20, num_workers=4, collate_fn=collate_fn
     )
     evalDs = CocoDataset(
         root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images",
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         transforms=evalTransform,
     )
     evalLoader = DataLoader2(
-        evalDs, shuffle=False, batch_size=10, num_workers=2, collate_fn=collate_fn
+        evalDs, shuffle=False, batch_size=20, num_workers=2, collate_fn=collate_fn
     )
     num_classes = 6
     model = create_model(num_classes)
@@ -88,7 +88,9 @@ if __name__ == "__main__":
             if batchId % 5 == 0:
                 tqdm.write(str(losses.detach().cpu().numpy()))
         model.eval()
-        if e % 10 != 0:
+        if e < 20 and e % 10 != 0:
+            continue
+        elif e > 20 and e % 3 != 0:
             continue
         with torch.no_grad():
             for imgs, targets in evalLoader:

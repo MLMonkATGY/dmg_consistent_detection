@@ -65,8 +65,8 @@ def visualizeAll(model):
             # filter out boxes according to `detection_threshold`
 
             boxes = boxes[scores >= detection_threshold].astype(np.int32)
-            if ii % 20 == 0:
-                print(f"{scores} {boxes}")
+            # if ii % 20 == 0:
+            #     print(f"{scores} {boxes}")
             ii += 1
             draw_boxes = boxes.copy()
             # get all the predicited class names
@@ -90,7 +90,7 @@ def visualizeAll(model):
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.7,
                     color,
-                    0.5,
+                    1,
                     lineType=cv2.LINE_AA,
                 )
             # cv2.imshow("Prediction", orig_image)

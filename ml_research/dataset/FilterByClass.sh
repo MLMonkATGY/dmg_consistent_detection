@@ -1,1 +1,1 @@
-python FilterCat.py --input_json /home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/complete.json --output_json ./filtered.json --categories bg front_side_view rear_side_view front_view rear_view
+python FilterCat.py --input_json /home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/regularisation/SUV/train.json --output_json ./filtered_train.json --categories front_side_view rear_side_view front_view rear_view

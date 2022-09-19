@@ -23,18 +23,17 @@ import cv2
 import numpy as np
 import copy
 from pytorch_lightning.loggers import MLFlowLogger
-from ml_research.dataset.KFoldDatasetGenerator import KFoldDatasetGenerator
 from ml_research.params.PriceRangeParams import PriceRangeParams
 from pytorch_lightning.callbacks import ModelCheckpoint
 from ml_research.params import ImportEnv
 from loguru import logger as displayLogger
 from mlflow.tracking.client import MlflowClient
-from colorama import Fore
 import itertools
 import warnings
 import torchvision
 import torchmetrics
 import dataclasses
+import shutil
 
 warnings.filterwarnings("ignore")
 
@@ -51,18 +50,44 @@ class SampleEvalResult:
     scales: Any
 
 
+def GenerateRunName(foldId, iteration):
+    imgBaseDir = PriceRangeParams.imgBaseDir
+    clsName = imgBaseDir.split("/")[-1].replace("_cls", "")
+    runName = f"{clsName}_i{iteration}_k{foldId}"
+    return runName
+
+
+def transportBestModel(dirPath, foldId):
+    baseOutput = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/auto_select"
+    if os.path.exists(baseOutput) and foldId == 1:
+        shutil.rmtree(baseOutput)
+    os.makedirs(baseOutput, exist_ok=True)
+    foldOutputDir = os.path.join(baseOutput, str(foldId))
+    os.makedirs(foldOutputDir, exist_ok=True)
+    allSavedModel = os.listdir(dirPath)
+    latestEpoch = 0
+    targetModel = ""
+    for p in allSavedModel:
+        epoch = int(p.split("epoch=")[-1].split("-e_acc")[0])
+        if epoch > latestEpoch:
+            latestEpoch = epoch
+            targetModel = p
+    shutil.copy(os.path.join(dirPath, targetModel), foldOutputDir)
+
+
 class ProcessModel(pl.LightningModule):
     def __init__(
         self,
     ):
         super(ProcessModel, self).__init__()
         self.save_hyperparameters()
-        self.model = torchvision.models.efficientnet_b2(pretrained=True)
+        self.model = torchvision.models.efficientnet_b0(pretrained=True)
         num_ftrs = self.model.classifier[1].in_features
         self.model.classifier[1] = torch.nn.Linear(in_features=num_ftrs, out_features=2)
 
         self.isHparamLogged = False
-        self.criterion = torch.nn.CrossEntropyLoss()
+        classWeight = torch.tensor(PriceRangeParams.ceWeight)
+        self.criterion = torch.nn.CrossEntropyLoss(classWeight)
         self.evalAccMetric = torchmetrics.Accuracy(num_classes=2)
         self.trainAccMetric = torchmetrics.Accuracy(num_classes=2)
         self.trainConfMatMetric = torchmetrics.ConfusionMatrix(
@@ -121,29 +146,33 @@ class ProcessModel(pl.LightningModule):
         class0FN = confMat[0][1]
         class1FN = confMat[1][0]
         class1TP = confMat[1][1]
-
+        diffTP = torch.abs(class0TP - class1TP)
         self.log("e_acc", evalAcc, prog_bar=True)
         self.log("e_0_TP", class0TP, prog_bar=True)
         self.log("eval_class0_FN", class0FN)
         self.log("eval_class1_FN", class1FN)
         self.log("e_1_TP", class1TP, prog_bar=True)
+        self.log("diff_tp", diffTP, prog_bar=True)
 
         self.evalConfMatMetric.reset()
         self.evalAccMetric.reset()
         return super().on_validation_epoch_end()
 
 
-def trainKthFold(trainLoader, testLoader, foldId):
+def trainKthFold(trainLoader, testLoader, iteration):
+    foldId = testLoader.dataset.df["kfold"].unique().item()
+    runName = GenerateRunName(foldId, iteration)
     logger = MLFlowLogger(
         experiment_name=PriceRangeParams.experimentName,
         tracking_uri=os.getenv("MLFLOW_TRACKING_URI"),
+        run_name=runName,
     )
 
     checkpoint_callback = ModelCheckpoint(
-        monitor="e_acc",
+        monitor="diff_tp",
         save_top_k=PriceRangeParams.saveTopNBest,
-        mode="max",
-        filename="{epoch:03d}-{e_acc:.2f}-{e_0_TP:.2f}-{e_1_TP:.2f}",
+        mode="min",
+        filename="{epoch:02d}-{e_acc:.2f}-{e_0_TP:.2f}-{e_1_TP:.2f}",
     )
     trainProcessModel = ProcessModel()
     trainer = pl.Trainer(
@@ -155,7 +184,7 @@ def trainKthFold(trainLoader, testLoader, foldId):
         benchmark=True,
         precision=PriceRangeParams.trainingPrecision,
         logger=logger,
-        log_every_n_steps=20,
+        log_every_n_steps=40,
         callbacks=[checkpoint_callback],
         detect_anomaly=False,
     )
@@ -176,10 +205,5 @@ def trainKthFold(trainLoader, testLoader, foldId):
         trainProcessModel.logger.run_id,
         checkpoint_callback.dirpath.replace("/checkpoints", "/"),
     )
-
-
-if __name__ == "__main__":
-    dataLoaderGenerator = KFoldDatasetGenerator()
-    allLoader = dataLoaderGenerator.genDataloader()
-    for foldId, (trainLoader, testLoader) in enumerate(allLoader):
-        trainKthFold(trainLoader, testLoader, foldId)
+    transportBestModel(checkpoint_callback.dirpath, foldId)
+    return trainProcessModel.logger.run_id

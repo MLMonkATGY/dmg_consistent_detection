@@ -1,37 +1,44 @@
+from logging import shutdown
+import shutil
 import cv2
 import numpy as np
 import torch
 import glob
 import time
 import os
+from tqdm import tqdm
+import pandas as pd
 
 
-def visualizeAll(model, epoch: int):
+def visualizeAndFilter(model, epoch: int, DIR_TEST: str, outputDir: str):
     model.eval()
+
     DEVICE = torch.device("cuda")
+    model = model.to(DEVICE)
     CLASSES = [
         "bg",
-        # "damage_area",
         "front_side_view",
         "front_view",
         "rear_side_view",
         "rear_view",
     ]
     COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
-    DIR_TEST = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images"
-    outputDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/inference_outputs/images"
+    clsName = DIR_TEST.split("/")[-1]
+    rejBaseDir = f"/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/OOD_reject/{clsName}"
+    rejImgDir = f"{rejBaseDir}/images"
+
+    os.makedirs(rejImgDir, exist_ok=True)
     os.makedirs(outputDir, exist_ok=True)
-    test_images = glob.glob(f"{DIR_TEST}/*.jpg")
+
+    test_images = glob.glob(f"{DIR_TEST}/*.JPG")
     print(f"Test instances: {len(test_images)}")
-    # define the detection threshold...
-    # ... any detection having score below this will be discarded
-    detection_threshold = 0.5
-    # to count the total number of images iterated through
+
+    detection_threshold = 0.6
     frame_count = 0
-    # to keep adding the FPS for each image
     total_fps = 0
-    ii = 0
-    for i in range(len(test_images)):
+    notConfidentImg = []
+
+    for i in tqdm(range(len(test_images))):
         # get the image file name for saving output later on
         image_name = test_images[i].split(os.path.sep)[-1].split(".")[0]
         image = cv2.imread(test_images[i])
@@ -73,6 +80,8 @@ def visualizeAll(model, epoch: int):
             # get all the predicited class names
             pred_classes = [CLASSES[i] for i in outputs[0]["labels"].cpu().numpy()]
             if len(boxes) == 0:
+                # print("rej detected")
+                notConfidentImg.append(test_images[i])
                 continue
             # draw the bounding boxes and write the class name on top of it
             for j, (box, confidence) in enumerate(zip(draw_boxes, confidence_score)):
@@ -101,6 +110,9 @@ def visualizeAll(model, epoch: int):
                 f"{outputDir}/{image_name}_e{epoch}.jpg",
                 orig_image,
             )
+        else:
+            notConfidentImg.append(test_images[i])
+
         # print(f"Image {i+1} done...")
         # print("-" * 50)
     print("TEST PREDICTIONS COMPLETE")
@@ -108,3 +120,13 @@ def visualizeAll(model, epoch: int):
     # calculate and print the average FPS
     avg_fps = total_fps / frame_count
     print(f"Average FPS: {avg_fps:.3f}")
+    print(f"rej detected : {len(notConfidentImg)}")
+    allRejFilename = []
+    for rejImg in notConfidentImg:
+        filename = rejImg.split("/")[-1]
+        allRejFilename.append(filename)
+        shutil.copy(rejImg, rejImgDir)
+    df = pd.DataFrame(allRejFilename, columns=["rej_filename"])
+    rejDfPath = f"{rejBaseDir}/rej_{clsName}.csv"
+    df.to_csv(rejDfPath)
+    return rejDfPath

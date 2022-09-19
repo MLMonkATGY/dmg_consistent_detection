@@ -15,14 +15,11 @@ partGroupViewMap = {"Front_View": [10, 20, 30, 110], "Rear_View": [70, 75, 60, 8
 baseDir = (
     "/run/user/1000/gvfs/smb-share:server=192.168.1.3,share=local_data/vm_case_img"
 )
-outputBaseDir = "/home/alextay96/Desktop/workspace/scrape_mrm/saloon_4_dr_range"
-if os.path.exists(outputBaseDir):
-    shutil.rmtree(outputBaseDir)
-os.makedirs(outputBaseDir, exist_ok=True)
+
 print(df.groupby("Vehicle_Type")["CaseID"].count().sort_values(ascending=False))
 allTargetFilename = ["Front View.jpg", "Rear View.jpg"]
 targetVehicleType = "Saloon - 4 Dr"
-totalSampleLimit = 20000
+totalSampleLimit = 100000
 df2 = set(df[df["Vehicle_Type"] == targetVehicleType]["CaseID"].tolist())
 allDownloadedCase = set([int(x) for x in os.listdir(baseDir)])
 intersect = list(df2.intersection(allDownloadedCase))
@@ -35,7 +32,6 @@ for srcDirName in tqdm(intersect[:totalSampleLimit]):
     validFilename = [x for x in allImgView if x in allTargetFilename]
     for filename in validFilename:
         viewName = filename.split(".")[0].replace(" ", "_")
-        viewDir = os.path.join(outputBaseDir, viewName)
         if viewName not in partGroupViewMap.keys():
             continue
         relatedPG = partGroupViewMap[viewName]
@@ -51,6 +47,7 @@ for srcDirName in tqdm(intersect[:totalSampleLimit]):
                 sum = 0
                 break
             sum += cost
+
         caseData = df[df["CaseID"] == srcDirName]
         if caseData.empty:
             continue
@@ -64,9 +61,6 @@ for srcDirName in tqdm(intersect[:totalSampleLimit]):
         else:
             dmgSeverity = 1
 
-        os.makedirs(viewDir, exist_ok=True)
-        priceRangeDir = os.path.join(viewDir, str(dmgSeverity))
-        os.makedirs(priceRangeDir, exist_ok=True)
         dstFilename = str(srcDirName) + "_" + filename
         annImage = {
             "src_path": os.path.join(fullSrcDir, filename),
@@ -83,6 +77,3 @@ for srcDirName in tqdm(intersect[:totalSampleLimit]):
 targetDf = pd.json_normalize(allAnn)
 outputDfFilename = targetVehicleType.replace(" ", "")
 targetDf.to_csv(f"./{outputDfFilename}.csv")
-# shutil.copyfile(
-#     os.path.join(fullSrcDir, filename), os.path.join(priceRangeDir, dstFilename)
-# )

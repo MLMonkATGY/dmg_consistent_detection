@@ -12,7 +12,8 @@ import os
 from torch.cuda.amp import autocast
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from tqdm import tqdm
-from ml_research.eval.visualize import visualizeAll
+from ml_research.eval.visualize import visualizeAndFilter
+import numpy as np
 
 
 def create_model(num_classes):
@@ -36,6 +37,7 @@ def collate_fn(batch):
 
 if __name__ == "__main__":
     DEVICE = torch.device("cuda")
+    modelDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/alternative_detection"
     # dm = CocoDatamodule()
     trainTransform = torchvision.transforms.Compose(
         [
@@ -51,23 +53,23 @@ if __name__ == "__main__":
         ]
     )
     trainDs = CocoDataset(
-        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images",
-        annotation="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/train.json",
+        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images_neg",
+        annotation="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/train_neg.json",
         transforms=trainTransform,
     )
 
     trainLoader = DataLoader2(
-        trainDs, shuffle=True, batch_size=10, num_workers=4, collate_fn=collate_fn
+        trainDs, shuffle=True, batch_size=5, num_workers=8, collate_fn=collate_fn
     )
     evalDs = CocoDataset(
-        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images",
+        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/images_neg",
         annotation="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/test.json",
         transforms=evalTransform,
     )
     evalLoader = DataLoader2(
-        evalDs, shuffle=False, batch_size=10, num_workers=2, collate_fn=collate_fn
+        evalDs, shuffle=False, batch_size=5, num_workers=4, collate_fn=collate_fn
     )
-    num_classes = 6
+    num_classes = 5
     model = create_model(num_classes)
     model = model.to(DEVICE)
     model.train()
@@ -75,37 +77,40 @@ if __name__ == "__main__":
 
     metric = MeanAveragePrecision(class_metrics=True)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    for e in tqdm(range(1000), desc="epoch"):
+    for e in tqdm(range(400), desc="epoch"):
         model.train()
         for batchId, (imgs, targets) in enumerate(tqdm(trainLoader)):
             optimizer.zero_grad()
 
             images = list(image.to(DEVICE) for image in imgs)
             targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
-            # with autocast():
             loss_dict = model(images, targets)
-            losses = sum(loss for loss in loss_dict.values())
+            losses = sum(loss for loss in loss_dict.values() if not torch.isnan(loss))
+            if not isinstance(losses, torch.Tensor):
+                continue
             losses.backward()
             optimizer.step()
-            if batchId % 5 == 0:
+            if batchId % 20 == 0:
                 tqdm.write(str(losses.detach().cpu().numpy()))
         model.eval()
-        if e < 20 and e % 5 != 0:
+        if e < 40 and e % 10 != 0:
             continue
-        elif e > 20 and e % 3 != 0:
+        elif e >= 40 and e % 5 != 0:
             continue
         with torch.no_grad():
-            for imgs, targets in evalLoader:
+            for imgs, targets in tqdm(evalLoader):
                 optimizer.zero_grad()
 
                 images = list(image.to(DEVICE) for image in imgs)
                 targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
-                # with autocast():
                 preds = model(images)
                 # losses = sum(loss for loss in loss_dict.values())
                 # print(preds[0])
                 metric.update(preds, targets)
         metricResult = metric.compute()
+        mAP = np.format_float_positional(metricResult["map"].numpy(), 2)
         pprint(metricResult)
-        visualizeAll(model=model, epoch=e)
         metric.reset()
+        torch.save(
+            model.state_dict(), f"{modelDir}/control_angle_detection_e{e}_{mAP}.ckpt"
+        )

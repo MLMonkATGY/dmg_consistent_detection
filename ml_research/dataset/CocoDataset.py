@@ -23,6 +23,8 @@ class CocoDataset(torch.utils.data.Dataset):
         coco = self.coco
         # Image ID
         img_id = self.ids[index]
+        # if img_id == 2 or img_id == 11:
+        #     pass
         # List: get annotation id from coco
         ann_ids = coco.getAnnIds(imgIds=img_id)
         # Dictionary: target coco_annotation file for an image

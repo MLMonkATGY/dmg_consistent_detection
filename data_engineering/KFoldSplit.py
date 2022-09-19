@@ -6,12 +6,13 @@ from sklearn.model_selection import StratifiedKFold
 from PIL import Image
 from loguru import logger
 
-srcDfPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/Saloon-4Dr.csv"
+srcDfPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/Hatchback-5Dr_FrontView_cls.csv"
 outputFilename = "KFold_" + srcDfPath.split("/")[-1].split(".")[0]
 annDf = pd.read_csv(srcDfPath)
 allViews = annDf["view_name"].unique()
-n_splits = 10
-imgBaseDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vehicle_type/Saloon-4Dr"
+n_splits = 5
+imgBaseDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Hatchback-5Dr_FrontView_cls"
+
 blackListImg = []
 nonExistImg = []
 for filename in tqdm(annDf["dst_filename"].unique()):
@@ -26,6 +27,12 @@ for filename in tqdm(annDf["dst_filename"].unique()):
         logger.warning(filename)
         nonExistImg.append(filename)
 annDf = annDf[~annDf["dst_filename"].isin(nonExistImg)]
+print(
+    annDf.groupby(["view_name", "label"])["dst_filename"]
+    .count()
+    .sort_values(ascending=False)
+)
+
 for viewName in allViews:
     viewSample = annDf[annDf["view_name"] == viewName]
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True)

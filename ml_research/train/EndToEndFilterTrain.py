@@ -44,13 +44,31 @@ from ml_research.train.PriceRangeTrainer import trainKthFold
 
 if __name__ == "__main__":
     OODCsvPath = loadAndFilter()
-    dataLoaderGenerator = KFoldDatasetGenerator(OODCsvPath)
-    allLoader = dataLoaderGenerator.genDataloader()
     allKFoldRunId = []
     maxIterations = 3
     for iteration in range(1, maxIterations + 1):
+        dataLoaderGenerator = KFoldDatasetGenerator(OODCsvPath)
+        allLoader = dataLoaderGenerator.genDataloader()
         for trainLoader, testLoader in allLoader:
-            runId = trainKthFold(trainLoader, testLoader, iteration)
+            srcDf = trainLoader.dataset.df
+            foldId = trainLoader.dataset.df["kfold"].unique().item()
+
+            clsNum1 = len(
+                srcDf[
+                    (srcDf["label"] == 1)
+                    & (srcDf["train_test"] == "train")
+                    & (srcDf["kfold"] == foldId)
+                ]
+            )
+            clsNum0 = len(
+                srcDf[
+                    (srcDf["label"] == 0)
+                    & (srcDf["train_test"] == "train")
+                    & (srcDf["kfold"] == foldId)
+                ]
+            )
+            ceWeight = [1.0, clsNum0 / clsNum1]
+            runId = trainKthFold(trainLoader, testLoader, iteration, ceWeight)
             allKFoldRunId.append(runId)
         predCsv = CrossValPred(iteration, dataLoaderGenerator)
         LabelIssueRankFilter(predCsv, iteration)

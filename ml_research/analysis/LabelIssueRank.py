@@ -7,21 +7,19 @@ import os
 import shutil
 import cv2
 
+from ml_research.params.PriceRangeParams import PriceRangeParams
+
 
 def LabelIssueRankFilter(predCsvPath, iteration):
     predsDf = pd.read_csv(predCsvPath)
-    # Only filter high cost
-    predsDf = predsDf[predsDf["label"] == 1]
-    srcImgDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Hatchback-5Dr_FrontView_cls"
     iter = iteration
     removeData = 50
-    dsName = srcImgDir.split("/")[-1]
+    dsName = PriceRangeParams.imgBaseDir.split("/")[-1]
     outputDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/wrong_label"
     print(len(predsDf))
     allLabel = predsDf["label"].values
     allLogit = []
     for logit in predsDf["logit"]:
-        aaa = logit.replace("'", "")
         arr = np.array(json.loads(logit))
         # arr = np.expand_dims(arr, 0)
         allLogit.append(arr)
@@ -33,6 +31,8 @@ def LabelIssueRankFilter(predCsvPath, iteration):
         allLogitNp,
         return_indices_ranked_by="self_confidence",
         min_examples_per_class=50,
+        filter_by="prune_by_class",
+        num_to_remove_per_class=[0, removeData],
     )
 
     print(f"Cleanlab found {len(ranked_label_issues)} label issues.")
@@ -45,9 +45,6 @@ def LabelIssueRankFilter(predCsvPath, iteration):
     for id, idx in enumerate(labelError):
         row = predsDf.iloc[idx]
         # print(predsDf[511:512].head())
-        label = row["label"].item()
-
-        srcImg = os.path.join(srcImgDir, row["dst_filename"])
         # img = cv2.imread(srcImg)
         selection = 114
 
@@ -63,7 +60,6 @@ def LabelIssueRankFilter(predCsvPath, iteration):
             # print(predsDf[511:512].head())
 
         elif selection == 114:
-            print("outlier")
             allDataToRemove.append(row["dst_filename"])
             allLabelToRemove.append(row["label"])
         cv2.destroyAllWindows()

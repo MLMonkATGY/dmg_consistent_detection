@@ -76,17 +76,16 @@ def transportBestModel(dirPath, foldId):
 
 
 class ProcessModel(pl.LightningModule):
-    def __init__(
-        self,
-    ):
+    def __init__(self, ceWeight=[1.0, 1.0]):
         super(ProcessModel, self).__init__()
         self.save_hyperparameters()
+        print(f"CE Weight {ceWeight}")
         self.model = torchvision.models.efficientnet_b0(pretrained=True)
         num_ftrs = self.model.classifier[1].in_features
         self.model.classifier[1] = torch.nn.Linear(in_features=num_ftrs, out_features=2)
 
         self.isHparamLogged = False
-        classWeight = torch.tensor(PriceRangeParams.ceWeight)
+        classWeight = torch.tensor(ceWeight)
         self.criterion = torch.nn.CrossEntropyLoss(classWeight)
         self.evalAccMetric = torchmetrics.Accuracy(num_classes=2)
         self.trainAccMetric = torchmetrics.Accuracy(num_classes=2)
@@ -159,7 +158,7 @@ class ProcessModel(pl.LightningModule):
         return super().on_validation_epoch_end()
 
 
-def trainKthFold(trainLoader, testLoader, iteration):
+def trainKthFold(trainLoader, testLoader, iteration, ceWeight):
     foldId = testLoader.dataset.df["kfold"].unique().item()
     runName = GenerateRunName(foldId, iteration)
     logger = MLFlowLogger(
@@ -174,7 +173,7 @@ def trainKthFold(trainLoader, testLoader, iteration):
         mode="min",
         filename="{epoch:02d}-{e_acc:.2f}-{e_0_TP:.2f}-{e_1_TP:.2f}",
     )
-    trainProcessModel = ProcessModel()
+    trainProcessModel = ProcessModel(ceWeight)
     trainer = pl.Trainer(
         default_root_dir="./outputs/{}".format(PriceRangeParams.localSaveDir),
         max_epochs=PriceRangeParams.maxEpoch,

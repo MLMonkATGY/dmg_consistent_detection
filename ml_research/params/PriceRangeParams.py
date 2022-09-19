@@ -17,7 +17,6 @@ class Params:
     trainingPrecision: int
     randomSeed: int
     maxEpoch: int
-    ceWeight: list[float]
     filterRejectImg: bool
 
 
@@ -36,6 +35,5 @@ PriceRangeParams = Params(
     trainingPrecision=16,
     randomSeed=99,
     maxEpoch=20,
-    ceWeight=[1.0, 1.0],
     filterRejectImg=True,
 )

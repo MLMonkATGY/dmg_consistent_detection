@@ -22,8 +22,8 @@ class Params:
 
 
 PriceRangeParams = Params(
-    srcDfPath="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/kfold_src/KFold_Hatchback-5Dr_FrontView_cls_kfold_5_FrontView.csv",
-    imgBaseDir="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Hatchback-5Dr_FrontView_cls",
+    srcDfPath="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/kfold_src/KFold_Pickup-4DrDbl_RearView_cls_kfold_5_RearView.csv",
+    imgBaseDir="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Pickup-4DrDbl_RearView_cls",
     rejLabelDir="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/wrong_label",
     imgMaxSize=350,
     trainBatchSize=70,
@@ -35,7 +35,7 @@ PriceRangeParams = Params(
     learningRate=1e-3,
     trainingPrecision=16,
     randomSeed=99,
-    maxEpoch=2,
+    maxEpoch=20,
     ceWeight=[1.0, 1.0],
     filterRejectImg=True,
 )

@@ -43,8 +43,7 @@ from ml_research.train.PriceRangeTrainer import trainKthFold
 
 
 if __name__ == "__main__":
-    # OODCsvPath = loadAndFilter()
-    OODCsvPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/OOD_reject/Hatchback-5Dr_FrontView_cls/rej_Hatchback-5Dr_FrontView_cls.csv"
+    OODCsvPath = loadAndFilter()
     dataLoaderGenerator = KFoldDatasetGenerator(OODCsvPath)
     allLoader = dataLoaderGenerator.genDataloader()
     allKFoldRunId = []

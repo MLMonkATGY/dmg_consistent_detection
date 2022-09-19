@@ -10,9 +10,11 @@ import cv2
 
 def LabelIssueRankFilter(predCsvPath, iteration):
     predsDf = pd.read_csv(predCsvPath)
+    # Only filter high cost
+    predsDf = predsDf[predsDf["label"] == 1]
     srcImgDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Hatchback-5Dr_FrontView_cls"
     iter = iteration
-    removeData = 100
+    removeData = 50
     dsName = srcImgDir.split("/")[-1]
     outputDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/wrong_label"
     print(len(predsDf))

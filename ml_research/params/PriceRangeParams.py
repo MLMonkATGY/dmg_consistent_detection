@@ -18,11 +18,12 @@ class Params:
     randomSeed: int
     maxEpoch: int
     filterRejectImg: bool
+    filterIteration: int
 
 
 PriceRangeParams = Params(
-    srcDfPath="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/kfold_src/KFold_Pickup-4DrDbl_RearView_cls_kfold_5_RearView.csv",
-    imgBaseDir="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Pickup-4DrDbl_RearView_cls",
+    srcDfPath="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/kfold_src/KFold_MPV_RearView_cls_kfold_5_RearView.csv",
+    imgBaseDir="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/MPV_RearView_cls",
     rejLabelDir="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/wrong_label",
     imgMaxSize=350,
     trainBatchSize=70,
@@ -36,4 +37,5 @@ PriceRangeParams = Params(
     randomSeed=99,
     maxEpoch=20,
     filterRejectImg=True,
+    filterIteration=3,
 )

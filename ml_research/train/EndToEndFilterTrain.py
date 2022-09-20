@@ -45,8 +45,8 @@ from ml_research.train.PriceRangeTrainer import trainKthFold
 if __name__ == "__main__":
     OODCsvPath = loadAndFilter()
     allKFoldRunId = []
-    maxIterations = 3
-    for iteration in range(1, maxIterations + 1):
+    maxIterations = PriceRangeParams.filterIteration
+    for iteration in range(1, maxIterations + 2):
         dataLoaderGenerator = KFoldDatasetGenerator(OODCsvPath)
         allLoader = dataLoaderGenerator.genDataloader()
         for trainLoader, testLoader in allLoader:

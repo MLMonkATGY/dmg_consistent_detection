@@ -3,7 +3,9 @@ import dataclasses
 from typing import List
 import torch
 from loguru import logger
-from ml_research.train.OODFilterTrainer import ProcessModel
+
+# from ml_research.train.OODFilterTrainer import ProcessModel
+from ml_research.train.PriceRangeTrainer import ProcessModel
 
 import ujson as json
 from ml_engineering.StagingModelInfo import stagingModelInfo
@@ -35,7 +37,7 @@ def ExportTorchScriptModel(ckptPath: str):
     taskName = stagingModelInfo.taskName
     extraInfo = dataclasses.asdict(
         ModelServingInfo(
-            expId=str(56),
+            expId=str(55),
             runId=runId,
             origFileName=filename,
             batchSize=str(batchSize),
@@ -44,7 +46,7 @@ def ExportTorchScriptModel(ckptPath: str):
             expName=stagingModelInfo.expName,
         )
     )
-    serviceModel = processModel.model
+    serviceModel = processModel.model.half()
     serviceModel = serviceModel.to(device)
     serviceModel.eval()
 

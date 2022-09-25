@@ -7,11 +7,13 @@ from ml_engineering.StageEval import StageModel
 from loguru import logger
 import torch
 
+from ml_engineering.StagePriceClassifer import StagePriceRangeClassifier
+
 
 if __name__ == "__main__":
     downloadedCkptPath = DownloadCheckpoints()
     logger.success("Ckpt downloaded : {}".format(downloadedCkptPath))
     localTorchScriptPath = ExportTorchScriptModel(downloadedCkptPath)
     logger.success("torch script compiled : {}".format(localTorchScriptPath))
-    StageModel(localTorchScriptPath)
+    StagePriceRangeClassifier(localTorchScriptPath)
     logger.success("model staged sucessfully")

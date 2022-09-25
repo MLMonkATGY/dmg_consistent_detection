@@ -3,7 +3,7 @@ import pandas as pd
 import shutil
 from tqdm import tqdm
 
-srcDfPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/Hatchback-5Dr_FrontView_cls.csv"
+srcDfPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/Saloon-4Dr_FrontView_cls.csv"
 annDf = pd.read_csv(srcDfPath)
 samplePerLabel = 3000
 sampledDf = annDf.groupby(["label", "view_name"]).sample(n=samplePerLabel, replace=True)

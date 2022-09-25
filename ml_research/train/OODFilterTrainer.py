@@ -36,6 +36,7 @@ import dataclasses
 import shutil
 from ml_research.dataset.CocoDataset import CocoDataset
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
+from torchvision.models.detection.retinanet import RetinaNet_ResNet50_FPN_V2_Weights
 
 
 def GenerateRunName(foldId, iteration):
@@ -53,10 +54,10 @@ def create_model(num_classes):
 
     # load Faster RCNN pre-trained model
     model = torchvision.models.detection.retinanet_resnet50_fpn_v2(
-        pretrained=True,
+        pretrain=True,
         min_size=OODParams.imgMinSize,
         max_size=OODParams.imgMaxSize,
-        num_classes=5,
+        num_classes=num_classes,
     )
     return model
 
@@ -103,6 +104,30 @@ def GetDataloaders():
     return trainLoader, evalLoader
 
 
+def GetNegSampleLoader():
+
+    evalTransform = torchvision.transforms.Compose(
+        [
+            torchvision.transforms.ToTensor(),
+        ]
+    )
+    negSampleAnn = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/negative_sample_test.json"
+
+    evalDs = CocoDataset(
+        root=OODParams.imgDir,
+        annotation=negSampleAnn,
+        transforms=evalTransform,
+    )
+    evalLoader = DataLoader2(
+        evalDs,
+        shuffle=False,
+        batch_size=OODParams.trainBatchSize,
+        num_workers=2,
+        collate_fn=collate_fn,
+    )
+    return evalLoader
+
+
 class ProcessModel(pl.LightningModule):
     def __init__(self):
         super(ProcessModel, self).__init__()
@@ -137,17 +162,20 @@ class ProcessModel(pl.LightningModule):
         self.testMetric.update(preds, targets)
 
     def validation_epoch_end(self, val_step_outputs) -> None:
-        metricResult = self.testMetric.compute()
-        for k, v in metricResult.items():
-            if "per_class" in k:
-                for i in range(len(v)):
-                    clsname = f"{k}_c{i}"
-                    self.log(clsname, v[i])
-            elif k == "map_50" or k == "mar_100":
-                self.log(k, v, prog_bar=True)
-            else:
-                self.log(k, v)
-
+        try:
+            metricResult = self.testMetric.compute()
+            for k, v in metricResult.items():
+                if "per_class" in k:
+                    for i in range(len(v)):
+                        clsname = f"{k}_c{i}"
+                        self.log(clsname, v[i])
+                elif k == "map_50" or k == "mar_100":
+                    self.log(k, v, prog_bar=True)
+                else:
+                    self.log(k, v)
+        except Exception as e1:
+            logger.warning("Eval metric not updated due to exceptions")
+            logger.warning(e1)
         self.testMetric.reset()
         return super().on_validation_epoch_end()
 
@@ -169,6 +197,7 @@ def trainEval():
     )
     trainProcessModel = ProcessModel()
     trainer = pl.Trainer(
+        # accumulate_grad_batches=5,
         default_root_dir="./outputs/{}".format(OODParams.localSaveDir),
         max_epochs=OODParams.maxEpoch,
         accelerator="gpu",
@@ -178,7 +207,7 @@ def trainEval():
         benchmark=True,
         precision=OODParams.trainingPrecision,
         logger=logger,
-        log_every_n_steps=50,
+        log_every_n_steps=200,
         callbacks=[checkpoint_callback],
         detect_anomaly=False,
         # limit_train_batches=10,

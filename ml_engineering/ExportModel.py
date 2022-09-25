@@ -7,6 +7,7 @@ from ml_research.train.OODFilterTrainer import ProcessModel
 
 import ujson as json
 from ml_engineering.StagingModelInfo import stagingModelInfo
+import torchvision
 
 
 @dataclass
@@ -44,13 +45,11 @@ def ExportTorchScriptModel(ckptPath: str):
         )
     )
     serviceModel = processModel.model
-    serviceModel = serviceModel.half().to(device)
+    serviceModel = serviceModel.to(device)
     serviceModel.eval()
 
     # evalLoaderIter = iter(dm.val_dataloader())
     # inputSample, labels = next(evalLoaderIter)
-    inputSample = torch.ones(1, 3, 640, 640)
-    inputTensor: torch.Tensor = inputSample.half().to(device)
     outputScript = torch.jit.script(
         serviceModel,
     )

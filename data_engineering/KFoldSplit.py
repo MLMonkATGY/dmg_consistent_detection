@@ -6,12 +6,12 @@ from sklearn.model_selection import StratifiedKFold
 from PIL import Image
 from loguru import logger
 
-srcDfPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/Hatchback-5Dr_FrontView_cls.csv"
+srcDfPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/Saloon-4Dr_FrontView_cls.csv"
 outputFilename = "KFold_" + srcDfPath.split("/")[-1].split(".")[0]
 annDf = pd.read_csv(srcDfPath)
 allViews = annDf["view_name"].unique()
 n_splits = 5
-imgBaseDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Hatchback-5Dr_FrontView_cls"
+imgBaseDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Saloon-4Dr_FrontView_cls"
 
 blackListImg = []
 nonExistImg = []

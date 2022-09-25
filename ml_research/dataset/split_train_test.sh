@@ -1,1 +1,1 @@
-python TrainTestSplit.py --having-annotations --multi-class -s 0.5 /home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/regularisation/SUV/new_SUV.json train.json test.json
+python TrainTestSplit.py --having-annotations --multi-class -s 0.8 /home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/sample/removed_bg.json train.json test.json

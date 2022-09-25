@@ -12,5 +12,17 @@
       "console": "integratedTerminal",
       "justMyCode": false
     }
+    // {
+    //   "name": "Python:Streamlit",
+    //   "type": "python",
+    //   "request": "launch",
+    //   "module": "streamlit",
+    //   "args": [
+    //     "run",
+    //     "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/ml_engineering/bento/streamlit_app.py",
+    //     "--server.port",
+    //     "6344"
+    //   ]
+    // }
   ]
 }

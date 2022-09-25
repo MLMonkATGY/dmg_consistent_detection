@@ -12,10 +12,10 @@ class StagingModelInfo:
 
 
 stagingModelInfo = StagingModelInfo(
-    runId="7977977d391f411c90af6aa89b38408a",
+    runId="817c94f314384ac4873dc002421541e1",
     taskName="mrm_OOD_detector",
     expId=56,
-    ckptArtifactPath="checkpoints/epoch=02-map_50=0.29-mar_100=0.62.ckpt",
+    ckptArtifactPath="checkpoints/epoch=68-map_50=0.70-mar_100=0.70.ckpt",
     bucketName="mlflow",
     expName="mrm_OOD_detecter",
 )

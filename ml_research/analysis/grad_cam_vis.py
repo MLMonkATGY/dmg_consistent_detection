@@ -28,12 +28,12 @@ if os.path.exists(outDir):
     shutil.rmtree(outDir)
 os.makedirs(outDir, exist_ok=True)
 
-ckpt = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/epoch=013-e_acc=0.84-e_0_TP=0.91-e_1_TP=0.71.ckpt"
-level1Rej = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/level1_reject/Pickup-4DrDbl_RearView_cls/rej_Pickup-4DrDbl_RearView_cls.csv"
+ckpt = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/auto_select/5/epoch=19-e_acc=0.75-e_0_TP=0.76-e_1_TP=0.73.ckpt"
+level1Rej = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/OOD_reject/SUV-5Dr_FrontView_cls/rej_SUV-5Dr_FrontView_cls.csv"
 rejDf = pd.read_csv(level1Rej)
 allRejFilename = rejDf["rej_filename"].tolist()
 # allRejFilename = []
-notConfidentPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/wrong_label/Pickup-4DrDbl_RearView_cls"
+notConfidentPath = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/wrong_label"
 notConfidentCsv = glob.glob(f"{notConfidentPath}/**/*.csv", recursive=True)
 allDf = []
 for i in notConfidentCsv:
@@ -48,13 +48,13 @@ model = model.to(device)
 targetLayers = model.model.features[-1]
 cam = GradCAMPlusPlus(model=model, target_layers=targetLayers, use_cuda=True)
 df = pd.read_csv(
-    "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/KFold_Pickup-4DrDbl_RearView_cls_kfold_5_RearView.csv"
+    "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/kfold_src/KFold_SUV-5Dr_FrontView_cls_kfold_5_FrontView.csv"
 )
-targetLabel = 0
+targetLabel = 1
 df = df[
-    (df["kfold"] == 3) & (df["train_test"] == "test") & (df["label"] == targetLabel)
+    (df["kfold"] == 5) & (df["train_test"] == "test") & (df["label"] == targetLabel)
 ]
-srcImgDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/Pickup-4DrDbl_RearView_cls"
+srcImgDir = "/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/vType_range/SUV-5Dr_FrontView_cls"
 
 allImgPath = df["dst_filename"].tolist()
 transform = torchvision.transforms.Compose(

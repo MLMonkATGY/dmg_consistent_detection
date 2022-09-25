@@ -13,7 +13,6 @@ from torch.cuda.amp import autocast
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 from tqdm import tqdm
-from ml_research.eval.visualize import visualizeAll
 from torchvision.datasets import ImageFolder
 from torch.utils.data import random_split
 import torchmetrics
@@ -22,9 +21,9 @@ import torchmetrics
 def create_model():
 
     # load Faster RCNN pre-trained model
-    model = torchvision.models.efficientnet_b2(pretrained=True)
+    model = torchvision.models.efficientnet_b0(pretrained=True)
     num_ftrs = model.classifier[1].in_features
-    model.classifier[1] = torch.nn.Linear(in_features=num_ftrs, out_features=2)
+    model.classifier[1] = torch.nn.Linear(in_features=num_ftrs, out_features=3)
 
     # model.fc = torch.nn.Linear(2048, 2)
     # get the number of input features
@@ -62,30 +61,30 @@ if __name__ == "__main__":
         ]
     )
     trainDs = ImageFolder(
-        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/dmg_area/myvi_range_rear/train",
+        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/level3/Saloon-4Dr/FrontView/train",
         transform=trainTransform,
     )
     evalDs = ImageFolder(
-        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/dmg_area/myvi_range_rear/test",
+        root="/home/alextay96/Desktop/workspace/mrm_workspace/dmg_consistent_detection/data/level3/Saloon-4Dr/FrontView/test",
         transform=evalTransform,
     )
 
-    trainLoader = DataLoader2(trainDs, shuffle=True, batch_size=20, num_workers=4)
+    trainLoader = DataLoader2(trainDs, shuffle=True, batch_size=32, num_workers=4)
 
     evalLoader = DataLoader2(evalDs, shuffle=False, batch_size=32, num_workers=4)
-    num_classes = 6
+    num_classes = 3
     model = create_model()
     model = model.to(DEVICE)
     model.train()
-    trainAcc = torchmetrics.Accuracy(num_classes=2).to(DEVICE)
+    trainAcc = torchmetrics.Accuracy(num_classes=num_classes).to(DEVICE)
     criterion = torch.nn.CrossEntropyLoss()
-    trainConfMat = torchmetrics.ConfusionMatrix(num_classes=2, normalize="true").to(
-        DEVICE
-    )
-    evalAcc = torchmetrics.Accuracy(num_classes=2).to(DEVICE)
-    evalConfMat = torchmetrics.ConfusionMatrix(num_classes=2, normalize="true").to(
-        DEVICE
-    )
+    trainConfMat = torchmetrics.ConfusionMatrix(
+        num_classes=num_classes, normalize="true"
+    ).to(DEVICE)
+    evalAcc = torchmetrics.Accuracy(num_classes=num_classes).to(DEVICE)
+    evalConfMat = torchmetrics.ConfusionMatrix(
+        num_classes=num_classes, normalize="true"
+    ).to(DEVICE)
     loggingLossInterval = 20
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     for e in tqdm(range(1000), desc="epoch"):
